@@ -4,6 +4,7 @@ from tavily import TavilyClient
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 import requests
+from dotenv import load_dotenv
 
 
 AGENT_SYSTEM_PROMPT = """
@@ -160,11 +161,16 @@ class OpenAICompatibleClient:
 
 
 # 配置LLM客户端
-API_KEY = "sk-kXZCte9skfk5mekW0dAe190907Da4a52884242EdBa56185e"
-BASE_URL = "https://aihubmix.com/v1"
-MODEL_ID = "coding-glm-4.6-free"
-TAVILY_API_KEY = "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"
-os.environ['TAVILY_API_KEY'] = "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"
+load_dotenv()
+
+MODEL_ID = os.getenv("LLM_MODEL_ID")
+assert MODEL_ID is not None
+
+API_KEY = os.getenv("LLM_API_KEY")
+assert API_KEY is not None
+
+BASE_URL = os.getenv("LLM_BASE_URL")
+assert BASE_URL is not None
 
 llm = OpenAICompatibleClient(
     model=MODEL_ID,
@@ -191,12 +197,12 @@ for i in range(5):
     match = re.search(
         r'(Thought:.*?Action:.*?)(?=\n\s*(?:Thought:|Action:|Observation:)|\Z)', llm_output, re.DOTALL)
     if match:
-        truncated = match.group(1).strip() #提取并去除首尾空格
+        truncated = match.group(1).strip()  # 提取并去除首尾空格
         if truncated != llm_output.strip():
             llm_output = truncated
             print("已截断")
     print(f"模型输出：\n{llm_output}\n")
-    
+
     prompt_history.append(llm_output)
 
     # 3.3 解析并执行行动
@@ -207,7 +213,7 @@ for i in range(5):
         observation_str = f"Observation: {observation}"
         print(f"{observation_str}\n" + "="*40)
         prompt_history.append(observation_str)
-        continue # 进入下一次循环
+        continue  # 进入下一次循环
 
     action_str = action_match.group(1).strip()
 
