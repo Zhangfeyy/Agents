@@ -1,9 +1,41 @@
 from serpapi import SerpApiClient
+from openai.types.chat import ChatCompletionMessageParam
 import os
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, List
 from dotenv import load_dotenv
+from environment import HelloAgentsLLM
 
 load_dotenv()
+CALCULATION_PROMPT = """
+你要进行数学计算，请遵循以下步骤：
+1. 从问题中提取数学问题
+2. 根据数学问题进行计算
+
+#问题：
+{question}
+
+请直接输出最终的答案。
+"""
+
+
+def calculate(math_problem: str) -> str:
+    print(f"正在进行数学计算")
+    try:
+        client = HelloAgentsLLM()
+        prompt = CALCULATION_PROMPT.format(math_problem)
+        messages: List[ChatCompletionMessageParam] = [
+            {'role': "user", "content": prompt}]
+        responses = client.think(messages=messages)
+        if responses is not None:
+            print("已经计算出答案 {responses}")
+            return responses
+        else:
+            print("未能计算出有效答案")
+            return ""
+    except Exception as e:
+        print(f"计算发生错误：{e}")
+        return ""
+
 
 def search(query: str) -> str:
     print(f"正在执行[SerpApi]网页搜索: {query}")
@@ -43,8 +75,6 @@ def search(query: str) -> str:
         return f"搜索发生错误: {e}"
 
 # 需要一个工具类调度工具
-
-
 class ToolExecutor:
     def __init__(self):
         # 一个字典：键是字符串，值是任何值
@@ -74,17 +104,16 @@ if __name__ == '__main__':
     toolExecutor = ToolExecutor()
     search_description = "网页搜索引擎"
     toolExecutor.registerTool("Search", search_description, search)
-    
+
     print(toolExecutor.getAvailableTools())
-    
+
     tool_name = "Search"
     tool_input = "Nvidia最新的GPU型号"
     tool_function = toolExecutor.getTool(tool_name)
 
-    
     if tool_function:
-            observation = tool_function(tool_input)
-            print("----观察----")
-            print(observation)
+        observation = tool_function(tool_input)
+        print("----观察----")
+        print(observation)
     else:
         print(f"未找到{tool_name}工具")
